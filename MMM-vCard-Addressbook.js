@@ -1,39 +1,22 @@
 /* global Module */
 
 /* Magic Mirror
- * Module: MMM-FRITZ-Box-Callmonitor
+ * Module: MMM-vCard-Addressbook
  *
  * By Paul-Vincent Roll http://paulvincentroll.com
  * MIT Licensed.
  */
 
-Module.register("MMM-FRITZ-Box-Callmonitor", {
+Module.register("MMM-vCard-Addressbook", {
 
 	// Default module config.
 	defaults: {
-		numberFontSize: 30,
-		vCard: false,
-		fritzIP: "192.168.178.1",
-		fritzPort: 1012,
-		minimumCallLength: 0,
-		maximumCallDistance: 60,
-		maximumCalls: 5,
-		fade: true,
-		fadePoint: 0.25
-
-	},
-
-	// Define required translations.
-	getTranslations: function() {
-		return {
-			en: "translations/en.json",
-			de: "translations/de.json"
-		};
+		vCard: false
 	},
 
 	notificationReceived: function(notification, payload, sender) {
 		if (notification === "PHONE_LOOKUP") {
-			this.sendSocketNotification("PHONE_LOOKUP", {number: payload, sender: sender.name});
+			this.sendSocketNotification("PHONE_LOOKUP", {number: payload.number, reason: payload.reason, sender: sender.name});
 		}
 	},
 

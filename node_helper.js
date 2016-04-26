@@ -75,7 +75,8 @@ module.exports = NodeHelper.create({
 				number: phone.normalize(payload.number.replace(/\s/g, "")),
 				request: payload.number,
 				original_sender: payload.sender,
-				resolved: resolved,
+				reason: payload.reason,
+				resolved: resolved
 			};
 			this.sendSocketNotification("PHONE_LOOKUP_RESULT", info);
 		}
