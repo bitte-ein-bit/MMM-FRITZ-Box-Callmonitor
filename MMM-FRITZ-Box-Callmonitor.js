@@ -12,15 +12,17 @@ Module.register("MMM-FRITZ-Box-Callmonitor", {
 	// Default module config.
 	defaults: {
 		numberFontSize: 30,
-		vCard: false,
 		fritzIP: "192.168.178.1",
 		fritzPort: 1012,
 		minimumCallLength: 0,
 		maximumCallDistance: 60,
 		maximumCalls: 5,
 		fade: true,
-		fadePoint: 0.25
-
+		fadePoint: 0.25,
+		addressbookPrio: {
+			"MMM-vCard-Addressbook": 10,
+			"MMM-iCloud-Client": 5
+		}
 	},
 
 	// Define required translations.
@@ -37,14 +39,42 @@ Module.register("MMM-FRITZ-Box-Callmonitor", {
 
 	notificationReceived: function(notification, payload, sender) {
 		if (notification === "PHONE_LOOKUP_RESULT") {
+
 			if (payload.resolved == true) {
-				text = payload.name;
-			} else {
-				text = payload.request;
+				// repack payload
+				var info = {
+					sender: sender,
+					name: payload.name,
+					label: payload.label,
+					number:  payload.request
+				};
+				// See if Number is known, if it does check where the entry is from
+				if (payload.request in this.lookedUpNumbers) {
+					if (this.lookedUpNumbers[payload.request].sender === sender) {
+						// info is from same source, let's just update our data
+						this.lookedUpNumbers[payload.request] = info;
+					} else {
+						var senderPrio = 0;
+						var savedPrio = 0;
+						// info is from diffrent source, check prios
+						if (sender in this.config.addressbookPrio) {
+							senderPrio = this.config.addressbookPrio[sender];
+						}
+						if (this.lookedUpNumbers[payload.request].sender  in this.config.addressbookPrio) {
+							savedPrio = this.config.addressbookPrio[this.lookedUpNumbers[payload.request].sender];
+						}
+						if (savedPrio < senderPrio) {
+							this.lookedUpNumbers[payload.request] = info;
+						}
+					}
+				} else {
+					this.lookedUpNumbers[payload.request] = info;
+				}
 			}
+
 			this.sendNotification("SHOW_ALERT", {
 				title: this.translate("title"),
-				message: "<span style='font-size:" + this.config.numberFontSize.toString() + "px'>" + text + "<span>",
+				message: "<span style='font-size:" + this.config.numberFontSize.toString() + "px'>" + this.resolveNumberLocally(payload.request) + "<span>",
 				imageFA: "phone"
 			});
 			//Set active Alert to current call
@@ -52,18 +82,26 @@ Module.register("MMM-FRITZ-Box-Callmonitor", {
 		}
 	},
 
+	resolveNumberLocally: function(number) {
+		if (number in this.lookedUpNumbers) {
+			return this.lookedUpNumbers[number].name;
+		} else {
+			return number;
+		}
+	},
+
 	// Override socket notification handler.
 	socketNotificationReceived: function(notification, payload) {
 		if (notification === "call") {
-			//Show alert on UI
-			this.sendNotification("PHONE_LOOKUP", payload);
+			// Do lookup of number via broadcast
+			this.sendNotification("PHONE_LOOKUP", payload.caller);
 		}
 		if (notification === "connected") {
 			//Send notification for currentCall module
-			this.sendNotification("CALL_CONNECTED", payload);
+			this.sendNotification("CALL_CONNECTED", payload.caller);
 
 			//Remove alert only on connect if it is the current alert shown
-			if (this.activeAlert === payload) {
+			if (this.activeAlert === payload.caller) {
 				//Remove alert from UI when call is connected
 				this.sendNotification("HIDE_ALERT");
 				this.activeAlert = null;
@@ -93,6 +131,7 @@ Module.register("MMM-FRITZ-Box-Callmonitor", {
 	start: function() {
 		//Create callHistory array
 		this.callHistory = [];
+		this.lookedUpNumbers = [];
 		this.activeAlert = null;
 		//Set helper variable this so it is available in the timer
 		var self = this;
@@ -139,7 +178,7 @@ Module.register("MMM-FRITZ-Box-Callmonitor", {
 
 			//Set caller of row
 			var caller =  document.createElement("td");
-			caller.innerHTML = calls[i].caller;
+			caller.innerHTML = this.resolveNumberLocally(calls[i].caller);
 			caller.className = "title bright";
 			callWrapper.appendChild(caller);
 
@@ -151,7 +190,6 @@ Module.register("MMM-FRITZ-Box-Callmonitor", {
 
 			//Add to wrapper
 			wrapper.appendChild(callWrapper);
-
 
 			// Create fade effect by MichMich (MIT)
 			if (this.config.fade && this.config.fadePoint < 1) {

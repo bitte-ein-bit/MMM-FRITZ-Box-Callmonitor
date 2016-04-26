@@ -25,7 +25,7 @@ modules: [
 ````
 
 ### MMM-Callmonitor-Current-Call
-If you are interested in having a list with all active calls as well, check out [MMM-Callmonitor-Current-Call](https://github.com/paviro/MMM-Callmonitor-Current-Call). 
+If you are interested in having a list with all active calls as well, check out [MMM-Callmonitor-Current-Call](https://github.com/paviro/MMM-Callmonitor-Current-Call).
 
 ## Configuration options
 
@@ -46,13 +46,6 @@ The following properties can be configured:
 			<td>Font size of the phone number displayed in the alert.<br>
 				<br><b>Possible values:</b> any <code>int</code> or <code>float</code>
 				<br><b>Default value:</b> <code>30</code>
-			</td>
-		</tr>
-		<tr>
-			<td><code>vCard</code></td>
-			<td>Absolute path to a .vcf file for number to name conversion.<br>
-				<br><b>Possible values:</b> <code>string</code>
-				<br><b>Default value:</b> <code>false</code>
 			</td>
 		</tr>
 		<tr>
@@ -109,8 +102,6 @@ The following properties can be configured:
 
 ## Dependencies
 - [node-fritzbox-callmonitor](https://www.npmjs.com/package/node-fritzbox-callmonitor) (installed by `npm install`)
-- [vcard-json](https://www.npmjs.com/package/vcard-json) (installed by `npm install`)
-- [phone-formatter](https://www.npmjs.com/package/phone-formatter) (installed by `npm install`)
 
 The MIT License (MIT)
 =====================
