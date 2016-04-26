@@ -39,20 +39,20 @@ Module.register("MMM-FRITZ-Box-Callmonitor", {
 
 	notificationReceived: function(notification, payload, sender) {
 		if (notification === "PHONE_LOOKUP_RESULT") {
-
+			var number = payload.request;
 			if (payload.resolved == true) {
 				// repack payload
 				var info = {
 					sender: sender,
 					name: payload.name,
 					label: payload.label,
-					number:  payload.request
+					number:  number
 				};
 				// See if Number is known, if it does check where the entry is from
-				if (payload.request in this.lookedUpNumbers) {
-					if (this.lookedUpNumbers[payload.request].sender === sender) {
+				if (number in this.lookedUpNumbers) {
+					if (this.lookedUpNumbers[number].sender === sender) {
 						// info is from same source, let's just update our data
-						this.lookedUpNumbers[payload.request] = info;
+						this.lookedUpNumbers[number] = info;
 					} else {
 						var senderPrio = 0;
 						var savedPrio = 0;
@@ -60,25 +60,26 @@ Module.register("MMM-FRITZ-Box-Callmonitor", {
 						if (sender in this.config.addressbookPrio) {
 							senderPrio = this.config.addressbookPrio[sender];
 						}
-						if (this.lookedUpNumbers[payload.request].sender  in this.config.addressbookPrio) {
-							savedPrio = this.config.addressbookPrio[this.lookedUpNumbers[payload.request].sender];
+						if (this.lookedUpNumbers[number].sender  in this.config.addressbookPrio) {
+							savedPrio = this.config.addressbookPrio[this.lookedUpNumbers[number].sender];
 						}
 						if (savedPrio < senderPrio) {
-							this.lookedUpNumbers[payload.request] = info;
+							this.lookedUpNumbers[number] = info;
 						}
 					}
 				} else {
-					this.lookedUpNumbers[payload.request] = info;
+					this.lookedUpNumbers[number] = info;
 				}
 			}
-
+			if (payload.reason == "call") {
 			this.sendNotification("SHOW_ALERT", {
 				title: this.translate("title"),
-				message: "<span style='font-size:" + this.config.numberFontSize.toString() + "px'>" + this.resolveNumberLocally(payload.request) + "<span>",
+				message: "<span style='font-size:" + this.config.numberFontSize.toString() + "px'>" + this.resolveNumberLocally(number) + "<span>",
 				imageFA: "phone"
 			});
 			//Set active Alert to current call
-			this.activeAlert = payload.request;
+				this.activeAlert = number;
+			}
 		}
 	},
 
@@ -94,7 +95,7 @@ Module.register("MMM-FRITZ-Box-Callmonitor", {
 	socketNotificationReceived: function(notification, payload) {
 		if (notification === "call") {
 			// Do lookup of number via broadcast
-			this.sendNotification("PHONE_LOOKUP", payload.caller);
+			this.sendNotification("PHONE_LOOKUP", {number: payload.caller, reason: "call"});
 		}
 		if (notification === "connected") {
 			//Send notification for currentCall module
